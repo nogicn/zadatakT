@@ -9,10 +9,11 @@ import (
 	"syscall"
 	"time"
 
+	"baseTemplate/internal/database"
 	"baseTemplate/internal/server"
 )
 
-func gracefulShutdown(apiServer *http.Server, done chan bool) {
+func gracefulShutdown(apiServer *http.Server, dbInstance database.Service, done chan bool) {
 	// Create context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -31,6 +32,8 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 		log.Printf("Server forced to shutdown with error: %v", err)
 	}
 
+	dbInstance.Close()
+
 	log.Println("Server exiting")
 
 	// Notify the main goroutine that the shutdown is complete
@@ -39,13 +42,13 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 func main() {
 
-	server := server.NewServer()
+	server, dbInstance := server.NewServer()
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
 
 	// Run graceful shutdown in a separate goroutine
-	go gracefulShutdown(server, done)
+	go gracefulShutdown(server, dbInstance, done)
 
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

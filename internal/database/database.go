@@ -3,15 +3,24 @@ package database
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
+	"baseTemplate/internal/database/repository"
+
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/pressly/goose/v3"
 )
+
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
 
 // Service represents a service that interacts with a database.
 type Service interface {
@@ -19,13 +28,28 @@ type Service interface {
 	// The keys and values in the map are service-specific.
 	Health() map[string]string
 
+	// get repository of rw db
+	GetRepositoryRW() *repository.Queries
+
+	// get rw db
+	GetReadWriteDB() *sql.DB
+
+	// get repository of ro db
+	GetRepositoryRO() *repository.Queries
+
+	// get ro db
+	GetReadOnlyDB() *sql.DB
+
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
 }
 
 type service struct {
-	db *sql.DB
+	dbro   *sql.DB
+	dbrw   *sql.DB
+	reporo *repository.Queries
+	reporw *repository.Queries
 }
 
 var (
@@ -39,15 +63,68 @@ func New() Service {
 		return dbInstance
 	}
 
-	db, err := sql.Open("sqlite3", dburl)
+	dbro, err := sql.Open("sqlite3", "file:"+dburl)
 	if err != nil {
-		// This will not be a connection error, but a DSN parse error or
-		// another initialization error.
 		log.Fatal(err)
+
+		// Ensure the directory exists
+		dir := filepath.Dir(dburl)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Fatalf("failed to create database directory: %v", err)
+		}
+		dbro, err = sql.Open("sqlite3", "file:"+dburl)
+		if err != nil {
+			log.Fatalf("failed to open database even after trying to create it, check free disk space: %v", err)
+			return nil
+		}
 	}
 
+	dbro.Exec("PRAGMA journal_mode=WAL;")
+	dbro.Exec("mode=ro;")
+
+	dbrw, err := sql.Open("sqlite3", "file:"+dburl)
+	if err != nil {
+		log.Fatal(err)
+
+		// Ensure the directory exists
+		dir := filepath.Dir(dburl)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Fatalf("failed to create database directory: %v", err)
+		}
+		dbrw, err = sql.Open("sqlite3", "file:"+dburl)
+		if err != nil {
+			log.Fatalf("failed to open database even after trying to create it, check free disk space: %v", err)
+			return nil
+		}
+	}
+	dbrw.SetMaxOpenConns(1)
+	dbrw.Exec("PRAGMA journal_mode=WAL;")
+	dbrw.Exec("mode=rw;")
+	dbrw.Exec("_txlock=immediate;")
+
+	if dburl == "" {
+		dburl = "./data/sqlite.db"
+	}
+
+	goose.SetBaseFS(embedMigrations)
+
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		log.Fatalf("goose set dialect failed: %v", err)
+	}
+
+	// Run migrations
+
+	if err := goose.Up(dbrw, "migrations"); err != nil {
+		log.Fatalf("goose up failed: %v", err)
+	}
+
+	queriesro := repository.New(dbro)
+	queriesrw := repository.New(dbrw)
 	dbInstance = &service{
-		db: db,
+		dbro:   dbro,
+		dbrw:   dbrw,
+		reporo: queriesro,
+		reporw: queriesrw,
 	}
 	return dbInstance
 }
@@ -61,7 +138,7 @@ func (s *service) Health() map[string]string {
 	stats := make(map[string]string)
 
 	// Ping the database
-	err := s.db.PingContext(ctx)
+	err := s.dbro.PingContext(ctx)
 	if err != nil {
 		stats["status"] = "down"
 		stats["error"] = fmt.Sprintf("db down: %v", err)
@@ -74,7 +151,7 @@ func (s *service) Health() map[string]string {
 	stats["message"] = "It's healthy"
 
 	// Get database stats (like open connections, in use, idle, etc.)
-	dbStats := s.db.Stats()
+	dbStats := s.dbro.Stats()
 	stats["open_connections"] = strconv.Itoa(dbStats.OpenConnections)
 	stats["in_use"] = strconv.Itoa(dbStats.InUse)
 	stats["idle"] = strconv.Itoa(dbStats.Idle)
@@ -103,11 +180,31 @@ func (s *service) Health() map[string]string {
 	return stats
 }
 
+// GetRepository returns the database repository instance
+func (s *service) GetRepositoryRW() *repository.Queries {
+	return s.reporw
+}
+
+func (s *service) GetRepositoryRO() *repository.Queries {
+	return s.reporo
+}
+
+func (s *service) GetReadOnlyDB() *sql.DB {
+	return s.dbro
+}
+
+func (s *service) GetReadWriteDB() *sql.DB {
+	return s.dbrw
+}
+
 // Close closes the database connection.
 // It logs a message indicating the disconnection from the specific database.
 // If the connection is successfully closed, it returns nil.
 // If an error occurs while closing the connection, it returns the error.
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", dburl)
-	return s.db.Close()
+	if s.dbro.Close() != nil || s.dbrw.Close() != nil {
+		return fmt.Errorf("failed to close database connection")
+	}
+	return nil
 }
