@@ -1,4 +1,4 @@
-module baseTemplate
+module backendT
 
 go 1.25.1
 

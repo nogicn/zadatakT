@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"baseTemplate/internal/database"
-	"baseTemplate/internal/server"
+	"backendT/internal/database"
+	"backendT/internal/server"
 )
 
 func gracefulShutdown(apiServer *http.Server, dbInstance database.Service, done chan bool) {

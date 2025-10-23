@@ -16,13 +16,13 @@ import (
 
 	"github.com/coder/websocket"
 
-	"baseTemplate/internal/server/handlers"
+	"backendT/internal/server/handlers"
 
 	"github.com/Treblle/treblle-go/v2"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
 
-	_ "baseTemplate/docs"
+	_ "backendT/docs"
 )
 
 // @title Your API Name

@@ -7,7 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"baseTemplate/internal/database/repository"
+	"backendT/internal/database/repository"
 )
 
 type Repo interface {
