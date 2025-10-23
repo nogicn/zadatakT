@@ -10,9 +10,16 @@ import (
 
 type Querier interface {
 	GetComments(ctx context.Context) ([]Comment, error)
+	PostsCreate(ctx context.Context, arg PostsCreateParams) (Post, error)
 	PostsGetAll(ctx context.Context) ([]Post, error)
+	PostsGetByID(ctx context.Context, id interface{}) (Post, error)
+	PostsGetByUserID(ctx context.Context, userID int64) ([]Post, error)
 	UsersCreate(ctx context.Context, arg UsersCreateParams) (User, error)
 	UsersGetAll(ctx context.Context) ([]User, error)
+	UsersGetByEmail(ctx context.Context, email string) (User, error)
+	UsersGetByID(ctx context.Context, id interface{}) (User, error)
+	UsersGetByUsername(ctx context.Context, username string) (User, error)
+	UsersUpdateEmailByID(ctx context.Context, arg UsersUpdateEmailByIDParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

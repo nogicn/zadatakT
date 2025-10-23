@@ -63,3 +63,75 @@ func (q *Queries) UsersGetAll(ctx context.Context) ([]User, error) {
 	}
 	return items, nil
 }
+
+const usersGetByEmail = `-- name: UsersGetByEmail :one
+SELECT id, username, email, created_at from users WHERE email = ?1
+`
+
+func (q *Queries) UsersGetByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, usersGetByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const usersGetByID = `-- name: UsersGetByID :one
+SELECT id, username, email, created_at from users WHERE id = ?1
+`
+
+func (q *Queries) UsersGetByID(ctx context.Context, id interface{}) (User, error) {
+	row := q.db.QueryRowContext(ctx, usersGetByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const usersGetByUsername = `-- name: UsersGetByUsername :one
+SELECT id, username, email, created_at from users WHERE username = ?1
+`
+
+func (q *Queries) UsersGetByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRowContext(ctx, usersGetByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const usersUpdateEmailByID = `-- name: UsersUpdateEmailByID :one
+UPDATE users
+SET email = ?1
+WHERE id = ?2
+RETURNING id, username, email, created_at
+`
+
+type UsersUpdateEmailByIDParams struct {
+	Email string      `json:"email"`
+	ID    interface{} `json:"id"`
+}
+
+func (q *Queries) UsersUpdateEmailByID(ctx context.Context, arg UsersUpdateEmailByIDParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, usersUpdateEmailByID, arg.Email, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+	)
+	return i, err
+}

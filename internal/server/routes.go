@@ -16,11 +16,11 @@ import (
 
 	"github.com/coder/websocket"
 
-	"backendT/internal/server/handlers"
-
 	"github.com/Treblle/treblle-go/v2"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
+
+	"backendT/internal/server/handlers"
 
 	_ "backendT/docs"
 )
@@ -32,7 +32,14 @@ import (
 // @BasePath /
 func (s *Server) RegisterRoutes() http.Handler {
 	e := echo.New()
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: middleware.DefaultSkipper,
+		Format: `{"time":"${time_rfc3339_nano}","id":"${id}","remote_ip":"${remote_ip}",` +
+			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
+			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
+			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
+		CustomTimeFormat: "2006-01-02 15:04:05.00000",
+	}))
 	e.Use(middleware.Recover())
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
@@ -106,10 +113,19 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/failure", s.simulateHorribleFailure)
 
-	usersHandler := handlers.NewUsersHandler(s.db.GetRepositoryRW())
-	e.GET("/users", usersHandler.GetAllUsers)
-	e.POST("/users", usersHandler.CreateUser)
+	handlers := handlers.New(s.db.GetRepositoryRW())
+	e.GET("/users", handlers.Users.GetAllUsers)
+	e.POST("/users", handlers.Users.CreateUser)
 	// curl example command: curl -X POST http://localhost:8080/users -H "Content-Type: application/json" -d '{"username":"testuser","email":"test@aaaa.bbbb"}'
+
+	e.GET("/posts", handlers.Posts.GetAllPosts)
+	e.POST("/posts", handlers.Posts.CreatePost)
+	// curl example command: curl -X POST http://localhost:8080/posts -H "Content-Type: application/json" -d '{"title":"Test Post","content":"This is a test post."}'
+
+	e.GET("/posts/id", handlers.Posts.GetPostByID)
+	e.GET("/posts/userid", handlers.Posts.GetPostByUserID)
+	// curl example command: curl http://localhost:8080/posts/id -H "Content-Type: application/json" -d '1'
+	// curl example command: curl http://localhost:8080/posts/userid -H "Content-Type: application/json" -d '1'
 
 	return e
 }

@@ -9,12 +9,87 @@ import (
 	"context"
 )
 
+const postsCreate = `-- name: PostsCreate :one
+INSERT INTO posts (user_id, title, content)
+VALUES (?1, ?2, ?3)
+RETURNING id, user_id, title, content, created_at
+`
+
+type PostsCreateParams struct {
+	UserID  int64  `json:"user_id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+func (q *Queries) PostsCreate(ctx context.Context, arg PostsCreateParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, postsCreate, arg.UserID, arg.Title, arg.Content)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Title,
+		&i.Content,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const postsGetAll = `-- name: PostsGetAll :many
 SELECT id, user_id, title, content, created_at from posts
 `
 
 func (q *Queries) PostsGetAll(ctx context.Context) ([]Post, error) {
 	rows, err := q.db.QueryContext(ctx, postsGetAll)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Post{}
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Title,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const postsGetByID = `-- name: PostsGetByID :one
+SELECT id, user_id, title, content, created_at from posts WHERE id = ?1
+`
+
+func (q *Queries) PostsGetByID(ctx context.Context, id interface{}) (Post, error) {
+	row := q.db.QueryRowContext(ctx, postsGetByID, id)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Title,
+		&i.Content,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const postsGetByUserID = `-- name: PostsGetByUserID :many
+SELECT id, user_id, title, content, created_at from posts WHERE user_id = ?1
+`
+
+func (q *Queries) PostsGetByUserID(ctx context.Context, userID int64) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, postsGetByUserID, userID)
 	if err != nil {
 		return nil, err
 	}

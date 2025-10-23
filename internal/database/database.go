@@ -203,8 +203,10 @@ func (s *service) GetReadWriteDB() *sql.DB {
 // If an error occurs while closing the connection, it returns the error.
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", dburl)
-	if s.dbro.Close() != nil || s.dbrw.Close() != nil {
-		return fmt.Errorf("failed to close database connection")
+	errRO := s.dbro.Close()
+	errRw := s.dbrw.Close()
+	if errRO != nil || errRw != nil {
+		return fmt.Errorf("failed to close database connection: ro=%v rw=%v", errRO, errRw)
 	}
 	return nil
 }
