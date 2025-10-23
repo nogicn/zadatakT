@@ -52,7 +52,7 @@ func (h *PostsHandler) GetAllPosts(c echo.Context) error {
 // @Tags posts
 // @Accept json
 // @Produce json
-// @Param user body repository.postsCreateParams true "New user payload"
+// @Param user body repository.PostsCreateParams true "New user payload"
 // @Success 201 {object} repository.User "Created user"
 // @Failure 400 {object} map[string]string "Bad request - invalid payload"
 // @Failure 500 {object} map[string]string "Internal server error"

@@ -46,7 +46,7 @@ func (h *LogsHandler) GetAllLogs(c echo.Context) error {
 }
 
 // GetLogsWithPagination handles HTTP GET requests to retrieve paginated logs.
-// @Summary Get paginated logs
+// @Summary Get paginated logs without filters
 // @Description Returns a paginated list of logs with basic view
 // @Tags logs
 // @Produce json

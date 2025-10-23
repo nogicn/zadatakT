@@ -57,6 +57,15 @@ definitions:
       response_time:
         $ref: '#/definitions/sql.NullString'
     type: object
+  backendT_internal_database_repository.PostsCreateParams:
+    properties:
+      content:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+    type: object
   backendT_internal_database_repository.User:
     properties:
       created_at:
@@ -209,7 +218,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Get paginated logs
+      summary: Get paginated logs without filters
       tags:
       - logs
   /posts:
@@ -231,6 +240,40 @@ paths:
               type: string
             type: object
       summary: Get all posts
+      tags:
+      - posts
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the database. Expects a JSON body with the
+        required fields.
+      parameters:
+      - description: New user payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/backendT_internal_database_repository.PostsCreateParams'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created user
+          schema:
+            $ref: '#/definitions/backendT_internal_database_repository.User'
+        "400":
+          description: Bad request - invalid payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new user
       tags:
       - posts
   /posts/id/{id}:

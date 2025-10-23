@@ -129,7 +129,7 @@ const docTemplate = `{
                 "tags": [
                     "logs"
                 ],
-                "summary": "Get paginated logs",
+                "summary": "Get paginated logs without filters",
                 "parameters": [
                     {
                         "type": "integer",
@@ -192,6 +192,56 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/backendT_internal_database_repository.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new user in the database. Expects a JSON body with the required fields.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Create a new user",
+                "parameters": [
+                    {
+                        "description": "New user payload",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/backendT_internal_database_repository.PostsCreateParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created user",
+                        "schema": {
+                            "$ref": "#/definitions/backendT_internal_database_repository.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid payload",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     },
@@ -655,6 +705,20 @@ const docTemplate = `{
                 },
                 "response_time": {
                     "$ref": "#/definitions/sql.NullString"
+                }
+            }
+        },
+        "backendT_internal_database_repository.PostsCreateParams": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },

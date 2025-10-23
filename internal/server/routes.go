@@ -150,28 +150,36 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/failure", s.simulateHorribleFailureRandomly)
 
-	handlers := handlers.New(s.db.GetRepositoryRW())
-	e.GET("/users", handlers.Users.GetAllUsers)
-	e.POST("/users", handlers.Users.CreateUser)
+	handlersRW := handlers.New(s.db.GetRepositoryRW())
+	//e.GET("/users", handlersRW.Users.GetAllUsers)
+	e.POST("/users", handlersRW.Users.CreateUser)
 	// curl example command: curl -X POST http://localhost:8080/users -H "Content-Type: application/json" -d '{"username":"testuser","email":"test@aaaa.bbbb"}'
-	e.GET("/users/id/:id", handlers.Users.GetUserByID)
-	e.GET("/users/username/:username", handlers.Users.GetUserByUsername)
-	e.GET("/users/email/:email", handlers.Users.GetUserByEmail)
-	// curl example command: curl http://localhost:8080/users/username -H "Content-Type: application/json" -d 'testuser'
-	// curl example command: curl http://localhost:8080/users/email -H "Content-Type: application/json" -d '
+	e.GET("/users/id/:id", handlersRW.Users.GetUserByID)
+	e.GET("/users/username/:username", handlersRW.Users.GetUserByUsername)
+	e.GET("/users/email/:email", handlersRW.Users.GetUserByEmail)
 
-	e.GET("/posts", handlers.Posts.GetAllPosts)
+	//e.GET("/posts", handlersRW.Posts.GetAllPosts)
 	// curl example command: curl http://localhost:8080/posts
-	e.POST("/posts", handlers.Posts.CreatePost)
-	// curl example command: curl -X POST http://localhost:8080/posts -H "Content-Type: application/json" -d '{"title":"Test Post","content":"This is a test post."}'
-	e.GET("/posts/id/:id", handlers.Posts.GetPostByID)
-	e.GET("/posts/userid/:userid", handlers.Posts.GetPostByUserID)
-	// curl example command: curl http://localhost:8080/posts/id -H "Content-Type: application/json" -d '{"id":1}'
-	// curl example command: curl http://localhost:8080/posts/userid -H "Content-Type: application/json" -d '{"user_id":1}'
 
-	e.GET("/logs", handlers.Logs.GetAllLogs)
-	e.GET("/logs/paginated", handlers.Logs.GetLogsWithPagination)
-	e.GET("/logs/filtered", handlers.Logs.GetLogsAdvanced)
+	e.POST("/posts", handlersRW.Posts.CreatePost)
+	// curl example command: curl -X POST http://localhost:8080/posts -H "Content-Type: application/json" -d '{"title":"Test Post","content":"This is a test post."}'
+
+	e.GET("/posts/id/:id", handlersRW.Posts.GetPostByID)
+	// curl example command: curl http://localhost:8080/posts/id/1
+
+	e.GET("/posts/userid/:userid", handlersRW.Posts.GetPostByUserID)
+	// curl example command: curl http://localhost:8080/posts/userid/1
+
+	//e.GET("/logs", handlersRW.Logs.GetAllLogs)
+
+	// Read-only handlers for greater speed where big data is read
+	handlerRO := handlers.New(s.db.GetRepositoryRO())
+	e.GET("/users", handlerRO.Users.GetAllUsers)
+	e.GET("/posts", handlerRO.Posts.GetAllPosts)
+	e.GET("/logs", handlerRO.Logs.GetAllLogs)
+
+	e.GET("/logs/paginated", handlerRO.Logs.GetLogsWithPagination)
+	e.GET("/logs/filtered", handlerRO.Logs.GetLogsAdvanced)
 	// curl example command: curl "http://localhost:8080/logs/filtered?method=GET&response=200&timeRange=-1%20hour"
 
 	return e
