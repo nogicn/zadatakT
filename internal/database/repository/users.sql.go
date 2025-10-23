@@ -84,7 +84,7 @@ const usersGetByID = `-- name: UsersGetByID :one
 SELECT id, username, email, created_at from users WHERE id = ?1
 `
 
-func (q *Queries) UsersGetByID(ctx context.Context, id interface{}) (User, error) {
+func (q *Queries) UsersGetByID(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, usersGetByID, id)
 	var i User
 	err := row.Scan(
@@ -120,8 +120,8 @@ RETURNING id, username, email, created_at
 `
 
 type UsersUpdateEmailByIDParams struct {
-	Email string      `json:"email"`
-	ID    interface{} `json:"id"`
+	Email string `json:"email"`
+	ID    int64  `json:"id"`
 }
 
 func (q *Queries) UsersUpdateEmailByID(ctx context.Context, arg UsersUpdateEmailByIDParams) (User, error) {

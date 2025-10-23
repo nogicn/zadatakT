@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 
@@ -13,7 +14,7 @@ import (
 type Repo interface {
 	UsersCreate(ctx context.Context, params repository.UsersCreateParams) (repository.User, error)
 	UsersGetAll(ctx context.Context) ([]repository.User, error)
-	UsersGetByID(ctx context.Context, id interface{}) (repository.User, error)
+	UsersGetByID(ctx context.Context, userID int64) (repository.User, error)
 	UsersGetByUsername(ctx context.Context, username string) (repository.User, error)
 	UsersGetByEmail(ctx context.Context, email string) (repository.User, error)
 }
@@ -57,7 +58,6 @@ func (h *UsersHandler) GetAllUsers(c echo.Context) error {
 // @Failure 400 {object} map[string]string "Bad request - invalid payload"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /users [post]
-
 func (h *UsersHandler) CreateUser(c echo.Context) error {
 	var newUser repository.User
 	if err := c.Bind(&newUser); err != nil {
@@ -90,12 +90,13 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 // @Failure 400 {object} map[string]string "Bad request - invalid ID"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /users/{id} [get]
+// @Router /users/id/{id} [get]
 func (h *UsersHandler) GetUserByID(c echo.Context) error {
-	userID := c.Param("id")
-	if err := c.Bind(&userID); err != nil {
+	userIDStr := c.Param("id")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request payload" + err.Error(),
+			"error": "Invalid user ID format",
 		})
 	}
 

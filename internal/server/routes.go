@@ -2,6 +2,8 @@ package server
 
 import (
 	"bytes"
+	"database/sql"
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -20,6 +22,7 @@ import (
 
 	echoSwagger "github.com/swaggo/echo-swagger"
 
+	"backendT/internal/database/repository"
 	"backendT/internal/server/handlers"
 
 	_ "backendT/docs"
@@ -32,14 +35,48 @@ import (
 // @BasePath /
 func (s *Server) RegisterRoutes() http.Handler {
 	e := echo.New()
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Skipper: middleware.DefaultSkipper,
-		Format: `{"time":"${time_rfc3339_nano}","id":"${id}","remote_ip":"${remote_ip}",` +
-			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
-			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
-			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
-		CustomTimeFormat: "2006-01-02 15:04:05.00000",
-	}))
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			start := time.Now()
+
+			// Process the request
+			err := next(c)
+			if err != nil {
+				c.Error(err)
+			}
+
+			// Create log entry after request is processed
+			entry := repository.LogsCreateParams{
+				RequestID:    sql.NullString{String: c.Response().Header().Get(echo.HeaderXRequestID), Valid: true},
+				RemoteIp:     sql.NullString{String: c.RealIP(), Valid: true},
+				Host:         sql.NullString{String: c.Request().Host, Valid: true},
+				Method:       sql.NullString{String: c.Request().Method, Valid: true},
+				Uri:          sql.NullString{String: c.Request().RequestURI, Valid: true},
+				UserAgent:    sql.NullString{String: c.Request().UserAgent(), Valid: true},
+				Status:       sql.NullInt64{Int64: int64(c.Response().Status), Valid: true},
+				Error:        sql.NullString{String: fmt.Sprintf("%v", err), Valid: true},
+				Latency:      sql.NullInt64{Int64: time.Since(start).Microseconds(), Valid: true},
+				LatencyHuman: sql.NullString{String: time.Since(start).String(), Valid: true},
+				BytesIn:      sql.NullInt64{Int64: c.Request().ContentLength, Valid: true},
+				BytesOut:     sql.NullInt64{Int64: int64(c.Response().Size), Valid: true},
+			}
+
+			// Log to console
+			logLine, _ := json.Marshal(entry)
+			fmt.Fprintln(os.Stdout, string(logLine))
+
+			// Save to database
+			_, dbErr := s.db.GetRepositoryRW().LogsCreate(c.Request().Context(), entry)
+			if dbErr != nil {
+				log.Printf("Error saving log entry: %v", dbErr)
+			}
+
+			return err
+		}
+
+	})
+
 	e.Use(middleware.Recover())
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
@@ -58,7 +95,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		Debug:     false,
 	})
 
-	// Wrap treblle's net/http middleware so it can be used as an Echo middleware.
+	// Wrap treblle's net/http middleware
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Read and buffer the request body so both Treblle and Echo handlers can consume it.
@@ -111,15 +148,15 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/websocket", s.websocketHandler)
 
-	e.GET("/failure", s.simulateHorribleFailure)
+	e.GET("/failure", s.simulateHorribleFailureRandomly)
 
 	handlers := handlers.New(s.db.GetRepositoryRW())
 	e.GET("/users", handlers.Users.GetAllUsers)
 	e.POST("/users", handlers.Users.CreateUser)
 	// curl example command: curl -X POST http://localhost:8080/users -H "Content-Type: application/json" -d '{"username":"testuser","email":"test@aaaa.bbbb"}'
-	e.GET("/users/id", handlers.Users.GetUserByID)
-	e.GET("/users/username", handlers.Users.GetUserByUsername)
-	e.GET("/users/email", handlers.Users.GetUserByEmail)
+	e.GET("/users/id/:id", handlers.Users.GetUserByID)
+	e.GET("/users/username/:username", handlers.Users.GetUserByUsername)
+	e.GET("/users/email/:email", handlers.Users.GetUserByEmail)
 	// curl example command: curl http://localhost:8080/users/username -H "Content-Type: application/json" -d 'testuser'
 	// curl example command: curl http://localhost:8080/users/email -H "Content-Type: application/json" -d '
 
@@ -131,6 +168,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/posts/userid/:userid", handlers.Posts.GetPostByUserID)
 	// curl example command: curl http://localhost:8080/posts/id -H "Content-Type: application/json" -d '{"id":1}'
 	// curl example command: curl http://localhost:8080/posts/userid -H "Content-Type: application/json" -d '{"user_id":1}'
+
+	e.GET("/logs", handlers.Logs.GetAllLogs)
+	e.GET("/logs/paginated", handlers.Logs.GetLogsWithPagination)
+	e.GET("/logs/filtered", handlers.Logs.GetLogsAdvanced)
+	// curl example command: curl "http://localhost:8080/logs/filtered?method=GET&response=200&timeRange=-1%20hour"
 
 	return e
 }
@@ -174,7 +216,8 @@ func (s *Server) websocketHandler(c echo.Context) error {
 	}
 	return nil
 }
-func (s *Server) simulateHorribleFailure(c echo.Context) error {
+
+func (s *Server) simulateHorribleFailureRandomly(c echo.Context) error {
 	if rand.Int()%9 == 0 {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "🚨🚨🚨🚨🚨🚨",

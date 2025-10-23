@@ -6,18 +6,27 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
-	GetComments(ctx context.Context) ([]Comment, error)
+	LogsCreate(ctx context.Context, arg LogsCreateParams) (Log, error)
+	LogsGetAll(ctx context.Context) ([]LogsGetAllRow, error)
+	LogsGetBasicView(ctx context.Context) ([]LogsGetBasicViewRow, error)
+	LogsGetBasicViewWithOffsetLimit(ctx context.Context, arg LogsGetBasicViewWithOffsetLimitParams) ([]LogsGetBasicViewWithOffsetLimitRow, error)
+	LogsGetBasicViewWithOffsetLimitAdvanced(ctx context.Context, arg LogsGetBasicViewWithOffsetLimitAdvancedParams) ([]LogsGetBasicViewWithOffsetLimitAdvancedRow, error)
+	LogsGetBasicViewWithOffsetLimitAdvancedOld(ctx context.Context, arg LogsGetBasicViewWithOffsetLimitAdvancedOldParams) ([]LogsGetBasicViewWithOffsetLimitAdvancedOldRow, error)
+	LogsGetMethodStats(ctx context.Context) ([]LogsGetMethodStatsRow, error)
+	LogsGetStatusStats(ctx context.Context) ([]LogsGetStatusStatsRow, error)
+	LogsGetUniqueMethods(ctx context.Context) ([]sql.NullString, error)
 	PostsCreate(ctx context.Context, arg PostsCreateParams) (Post, error)
 	PostsGetAll(ctx context.Context) ([]Post, error)
-	PostsGetByID(ctx context.Context, id interface{}) (Post, error)
+	PostsGetByID(ctx context.Context, id int64) (Post, error)
 	PostsGetByUserID(ctx context.Context, userID int64) ([]Post, error)
 	UsersCreate(ctx context.Context, arg UsersCreateParams) (User, error)
 	UsersGetAll(ctx context.Context) ([]User, error)
 	UsersGetByEmail(ctx context.Context, email string) (User, error)
-	UsersGetByID(ctx context.Context, id interface{}) (User, error)
+	UsersGetByID(ctx context.Context, id int64) (User, error)
 	UsersGetByUsername(ctx context.Context, username string) (User, error)
 	UsersUpdateEmailByID(ctx context.Context, arg UsersUpdateEmailByIDParams) (User, error)
 }

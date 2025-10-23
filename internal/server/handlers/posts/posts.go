@@ -14,7 +14,7 @@ import (
 type Repo interface {
 	PostsCreate(ctx context.Context, params repository.PostsCreateParams) (repository.Post, error)
 	PostsGetAll(ctx context.Context) ([]repository.Post, error)
-	PostsGetByID(ctx context.Context, id interface{}) (repository.Post, error)
+	PostsGetByID(ctx context.Context, userID int64) (repository.Post, error)
 	PostsGetByUserID(ctx context.Context, userID int64) ([]repository.Post, error)
 }
 
@@ -57,7 +57,6 @@ func (h *PostsHandler) GetAllPosts(c echo.Context) error {
 // @Failure 400 {object} map[string]string "Bad request - invalid payload"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /posts [post]
-
 func (h *PostsHandler) CreatePost(c echo.Context) error {
 	var newPost repository.Post
 	if err := c.Bind(&newPost); err != nil {
@@ -90,12 +89,13 @@ func (h *PostsHandler) CreatePost(c echo.Context) error {
 // @Failure 400 {object} map[string]string "Bad request - invalid ID"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /posts/{id} [get]
+// @Router /posts/id/{id} [get]
 func (h *PostsHandler) GetPostByID(c echo.Context) error {
-	id := c.Param("id")
-	if err := c.Bind(&id); err != nil {
+	idstr := c.Param("id")
+	id, err := strconv.ParseInt(idstr, 10, 64)
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request payload" + err.Error(),
+			"error": "Invalid user ID format",
 		})
 	}
 

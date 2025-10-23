@@ -155,7 +155,7 @@ func FillWithData(s Service) {
 	_, err = repo.PostsCreate(ctx, repository.PostsCreateParams{
 		Title:   "Hello World",
 		Content: "This is the first post.",
-		UserID:  userID.ID.(int64),
+		UserID:  userID.ID,
 	})
 	if err != nil {
 		log.Printf("Error creating test post: %v", err)

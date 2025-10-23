@@ -4,25 +4,46 @@
 
 package repository
 
+import (
+	"database/sql"
+)
+
 type Comment struct {
-	ID        interface{} `json:"id"`
-	PostID    int64       `json:"post_id"`
-	UserID    int64       `json:"user_id"`
-	Comment   string      `json:"comment"`
-	CreatedAt interface{} `json:"created_at"`
+	ID        int64        `json:"id"`
+	PostID    int64        `json:"post_id"`
+	UserID    int64        `json:"user_id"`
+	Comment   string       `json:"comment"`
+	CreatedAt sql.NullTime `json:"created_at"`
+}
+
+type Log struct {
+	ID           int64          `json:"id"`
+	Timestamp    sql.NullTime   `json:"timestamp"`
+	RequestID    sql.NullString `json:"request_id"`
+	RemoteIp     sql.NullString `json:"remote_ip"`
+	Host         sql.NullString `json:"host"`
+	Method       sql.NullString `json:"method"`
+	Uri          sql.NullString `json:"uri"`
+	UserAgent    sql.NullString `json:"user_agent"`
+	Status       sql.NullInt64  `json:"status"`
+	Error        sql.NullString `json:"error"`
+	Latency      sql.NullInt64  `json:"latency"`
+	LatencyHuman sql.NullString `json:"latency_human"`
+	BytesIn      sql.NullInt64  `json:"bytes_in"`
+	BytesOut     sql.NullInt64  `json:"bytes_out"`
 }
 
 type Post struct {
-	ID        interface{} `json:"id"`
-	UserID    int64       `json:"user_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	CreatedAt interface{} `json:"created_at"`
+	ID        int64        `json:"id"`
+	UserID    int64        `json:"user_id"`
+	Title     string       `json:"title"`
+	Content   string       `json:"content"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }
 
 type User struct {
-	ID        interface{} `json:"id"`
-	Username  string      `json:"username"`
-	Email     string      `json:"email"`
-	CreatedAt interface{} `json:"created_at"`
+	ID        int64        `json:"id"`
+	Username  string       `json:"username"`
+	Email     string       `json:"email"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }

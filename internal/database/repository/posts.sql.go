@@ -71,7 +71,7 @@ const postsGetByID = `-- name: PostsGetByID :one
 SELECT id, user_id, title, content, created_at FROM posts WHERE id = ?1
 `
 
-func (q *Queries) PostsGetByID(ctx context.Context, id interface{}) (Post, error) {
+func (q *Queries) PostsGetByID(ctx context.Context, id int64) (Post, error) {
 	row := q.db.QueryRowContext(ctx, postsGetByID, id)
 	var i Post
 	err := row.Scan(
