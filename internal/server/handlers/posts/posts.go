@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 
@@ -27,35 +28,35 @@ func NewPostsHandler(r *repository.Queries) *PostsHandler {
 	}
 }
 
-// GetAllPosts handles HTTP GET requests to retrieve all users.
-// @Summary Get all users
-// @Description Returns a list of all users from the database.
-// @Tags users
+// GetAllPosts handles HTTP GET requests to retrieve all posts.
+// @Summary Get all posts
+// @Description Returns a list of all posts from the database.
+// @Tags posts
 // @Produce json
-// @Success 200 {array} repository.User "List of users"
+// @Success 200 {array} repository.User "List of posts"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /users [get]
+// @Router /posts [get]
 func (h *PostsHandler) GetAllPosts(c echo.Context) error {
-	users, err := h.repo.PostsGetAll(c.Request().Context())
+	posts, err := h.repo.PostsGetAll(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch users",
+			"error": "Failed to fetch posts",
 		})
 	}
-	return c.JSON(http.StatusOK, users)
+	return c.JSON(http.StatusOK, posts)
 }
 
 // CreateUser handles HTTP POST requests to create a new user.
 // @Summary Create a new user
 // @Description Creates a new user in the database. Expects a JSON body with the required fields.
-// @Tags users
+// @Tags posts
 // @Accept json
 // @Produce json
-// @Param user body repository.UsersCreateParams true "New user payload"
+// @Param user body repository.postsCreateParams true "New user payload"
 // @Success 201 {object} repository.User "Created user"
 // @Failure 400 {object} map[string]string "Bad request - invalid payload"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /users [post]
+// @Router /posts [post]
 
 func (h *PostsHandler) CreatePost(c echo.Context) error {
 	var newPost repository.Post
@@ -82,53 +83,55 @@ func (h *PostsHandler) CreatePost(c echo.Context) error {
 // GetPostByID handles HTTP GET requests to retrieve a user by their ID.
 // @Summary Get user by ID
 // @Description Fetches a single user by numeric ID.
-// @Tags users
+// @Tags posts
 // @Produce json
 // @Param id path int true "User ID"
 // @Success 200 {object} repository.User "Found user"
 // @Failure 400 {object} map[string]string "Bad request - invalid ID"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /users/{id} [get]
+// @Router /posts/{id} [get]
 func (h *PostsHandler) GetPostByID(c echo.Context) error {
-	var postID int64
-	if err := c.Bind(&postID); err != nil {
+	id := c.Param("id")
+	if err := c.Bind(&id); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid request payload" + err.Error(),
 		})
 	}
 
-	user, err := h.repo.PostsGetByID(c.Request().Context(), postID)
+	post, err := h.repo.PostsGetByID(c.Request().Context(), id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch user",
 		})
 	}
 
-	return c.JSON(http.StatusOK, user)
+	return c.JSON(http.StatusOK, post)
 
 }
 
 // GetPostByUserID handles HTTP GET requests to retrieve a user by username.
 // @Summary Get user by username
 // @Description Fetches a single user by their username.
-// @Tags users
+// @Tags posts
 // @Produce json
 // @Param username path string true "Username"
 // @Success 200 {object} repository.User "Found user"
 // @Failure 400 {object} map[string]string "Bad request - invalid username"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /users/username/{username} [get]
+// @Router /posts/username/{username} [get]
 func (h *PostsHandler) GetPostByUserID(c echo.Context) error {
-	var postID int64
-	if err := c.Bind(&postID); err != nil {
+	userID := c.Param("userid")
+
+	userIDInt, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request payload" + err.Error(),
+			"error": "Invalid user ID format",
 		})
 	}
 
-	user, err := h.repo.PostsGetByUserID(c.Request().Context(), postID)
+	user, err := h.repo.PostsGetByUserID(c.Request().Context(), userIDInt)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch user",

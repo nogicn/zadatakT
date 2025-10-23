@@ -126,7 +126,41 @@ func New() Service {
 		reporo: queriesro,
 		reporw: queriesrw,
 	}
+
+	if queriesrw.UsersGetByUsername(context.Background(), "test"); err != nil {
+		FillWithData(dbInstance)
+	}
+
 	return dbInstance
+}
+
+func FillWithData(s Service) {
+	repo := s.GetRepositoryRW()
+	ctx := context.Background()
+
+	_, err := repo.UsersCreate(ctx, repository.UsersCreateParams{
+		Username: "test",
+		Email:    "test@test.com",
+	})
+	if err != nil {
+		log.Printf("Error creating test user: %v", err)
+	}
+
+	fmt.Println("Created test user")
+	fmt.Println(repo.UsersGetAll(ctx))
+
+	userID, _ := repo.UsersGetByUsername(ctx, "test")
+	fmt.Printf("Fetched test user: %+v\n", userID)
+
+	_, err = repo.PostsCreate(ctx, repository.PostsCreateParams{
+		Title:   "Hello World",
+		Content: "This is the first post.",
+		UserID:  userID.ID.(int64),
+	})
+	if err != nil {
+		log.Printf("Error creating test post: %v", err)
+	}
+
 }
 
 // Health checks the health of the database connection by pinging the database.

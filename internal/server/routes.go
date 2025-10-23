@@ -117,15 +117,20 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/users", handlers.Users.GetAllUsers)
 	e.POST("/users", handlers.Users.CreateUser)
 	// curl example command: curl -X POST http://localhost:8080/users -H "Content-Type: application/json" -d '{"username":"testuser","email":"test@aaaa.bbbb"}'
+	e.GET("/users/id", handlers.Users.GetUserByID)
+	e.GET("/users/username", handlers.Users.GetUserByUsername)
+	e.GET("/users/email", handlers.Users.GetUserByEmail)
+	// curl example command: curl http://localhost:8080/users/username -H "Content-Type: application/json" -d 'testuser'
+	// curl example command: curl http://localhost:8080/users/email -H "Content-Type: application/json" -d '
 
 	e.GET("/posts", handlers.Posts.GetAllPosts)
+	// curl example command: curl http://localhost:8080/posts
 	e.POST("/posts", handlers.Posts.CreatePost)
 	// curl example command: curl -X POST http://localhost:8080/posts -H "Content-Type: application/json" -d '{"title":"Test Post","content":"This is a test post."}'
-
-	e.GET("/posts/id", handlers.Posts.GetPostByID)
-	e.GET("/posts/userid", handlers.Posts.GetPostByUserID)
-	// curl example command: curl http://localhost:8080/posts/id -H "Content-Type: application/json" -d '1'
-	// curl example command: curl http://localhost:8080/posts/userid -H "Content-Type: application/json" -d '1'
+	e.GET("/posts/id/:id", handlers.Posts.GetPostByID)
+	e.GET("/posts/userid/:userid", handlers.Posts.GetPostByUserID)
+	// curl example command: curl http://localhost:8080/posts/id -H "Content-Type: application/json" -d '{"id":1}'
+	// curl example command: curl http://localhost:8080/posts/userid -H "Content-Type: application/json" -d '{"user_id":1}'
 
 	return e
 }

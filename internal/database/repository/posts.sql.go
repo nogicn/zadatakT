@@ -68,7 +68,7 @@ func (q *Queries) PostsGetAll(ctx context.Context) ([]Post, error) {
 }
 
 const postsGetByID = `-- name: PostsGetByID :one
-SELECT id, user_id, title, content, created_at from posts WHERE id = ?1
+SELECT id, user_id, title, content, created_at FROM posts WHERE id = ?1
 `
 
 func (q *Queries) PostsGetByID(ctx context.Context, id interface{}) (Post, error) {
@@ -85,7 +85,7 @@ func (q *Queries) PostsGetByID(ctx context.Context, id interface{}) (Post, error
 }
 
 const postsGetByUserID = `-- name: PostsGetByUserID :many
-SELECT id, user_id, title, content, created_at from posts WHERE user_id = ?1
+SELECT id, user_id, title, content, created_at FROM posts WHERE user_id = ?1
 `
 
 func (q *Queries) PostsGetByUserID(ctx context.Context, userID int64) ([]Post, error) {

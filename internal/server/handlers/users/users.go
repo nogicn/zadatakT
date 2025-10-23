@@ -92,7 +92,7 @@ func (h *UsersHandler) CreateUser(c echo.Context) error {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /users/{id} [get]
 func (h *UsersHandler) GetUserByID(c echo.Context) error {
-	var userID int64
+	userID := c.Param("id")
 	if err := c.Bind(&userID); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid request payload" + err.Error(),
@@ -122,7 +122,7 @@ func (h *UsersHandler) GetUserByID(c echo.Context) error {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /users/username/{username} [get]
 func (h *UsersHandler) GetUserByUsername(c echo.Context) error {
-	var username string
+	username := c.Param("username")
 	if err := c.Bind(&username); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid request payload" + err.Error(),
@@ -152,7 +152,7 @@ func (h *UsersHandler) GetUserByUsername(c echo.Context) error {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /users/email/{email} [get]
 func (h *UsersHandler) GetUserByEmail(c echo.Context) error {
-	var username string
+	username := c.Param("email")
 	if err := c.Bind(&username); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid request payload" + err.Error(),

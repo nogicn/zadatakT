@@ -7,7 +7,7 @@ VALUES (:user_id, :title, :content)
 RETURNING *;
 
 -- name: PostsGetByID :one
-SELECT * from posts WHERE id = sqlc.arg(id);
+SELECT * FROM posts WHERE id = sqlc.arg(id);
 
 -- name: PostsGetByUserID :many
-SELECT * from posts WHERE user_id = sqlc.arg(user_id);
+SELECT * FROM posts WHERE user_id = sqlc.arg(user_id);
