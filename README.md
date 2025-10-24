@@ -122,7 +122,7 @@ make docker-down
 
 Run the application in production mode
 ```bash
-make docker-run --profile production
+docker compose --profile production up -d --build
 ```
 
 Live reload the application using air:
