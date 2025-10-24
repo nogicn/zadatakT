@@ -33,7 +33,7 @@ func NewPostsHandler(r *repository.Queries) *PostsHandler {
 // @Description Returns a list of all posts from the database.
 // @Tags posts
 // @Produce json
-// @Success 200 {array} repository.User "List of posts"
+// @Success 200 {array} repository.Post "List of posts"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /posts [get]
 func (h *PostsHandler) GetAllPosts(c echo.Context) error {
@@ -46,14 +46,14 @@ func (h *PostsHandler) GetAllPosts(c echo.Context) error {
 	return c.JSON(http.StatusOK, posts)
 }
 
-// CreateUser handles HTTP POST requests to create a new user.
-// @Summary Create a new user
-// @Description Creates a new user in the database. Expects a JSON body with the required fields.
+// CreatePost handles HTTP POST requests to create a new post.
+// @Summary Create a new post
+// @Description Creates a new post in the database. Expects a JSON body with the required fields.
 // @Tags posts
 // @Accept json
 // @Produce json
-// @Param user body repository.PostsCreateParams true "New user payload"
-// @Success 201 {object} repository.User "Created user"
+// @Param post body repository.PostsCreateParams true "New post payload"
+// @Success 201 {object} repository.Post "Created post"
 // @Failure 400 {object} map[string]string "Bad request - invalid payload"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /posts [post]
@@ -79,15 +79,15 @@ func (h *PostsHandler) CreatePost(c echo.Context) error {
 	return c.JSON(http.StatusCreated, createdUser)
 }
 
-// GetPostByID handles HTTP GET requests to retrieve a user by their ID.
-// @Summary Get user by ID
-// @Description Fetches a single user by numeric ID.
+// GetPostByID handles HTTP GET requests to retrieve a post by their ID.
+// @Summary Get post by ID
+// @Description Fetches a single post by numeric ID.
 // @Tags posts
 // @Produce json
-// @Param id path int true "User ID"
-// @Success 200 {object} repository.User "Found user"
+// @Param id path int true "Post ID"
+// @Success 200 {object} repository.Post "Found post"
 // @Failure 400 {object} map[string]string "Bad request - invalid ID"
-// @Failure 404 {object} map[string]string "User not found"
+// @Failure 404 {object} map[string]string "Post not found"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /posts/id/{id} [get]
 func (h *PostsHandler) GetPostByID(c echo.Context) error {
@@ -110,17 +110,17 @@ func (h *PostsHandler) GetPostByID(c echo.Context) error {
 
 }
 
-// GetPostByUserID handles HTTP GET requests to retrieve a user by username.
-// @Summary Get user by username
-// @Description Fetches a single user by their username.
+// GetPostByUserID handles HTTP GET requests to retrieve a post by user ID.
+// @Summary Get post by user ID
+// @Description Fetches a single post by its user ID.
 // @Tags posts
 // @Produce json
-// @Param username path string true "Username"
-// @Success 200 {object} repository.User "Found user"
-// @Failure 400 {object} map[string]string "Bad request - invalid username"
-// @Failure 404 {object} map[string]string "User not found"
+// @Param userid path int true "User ID"
+// @Success 200 {object} repository.Post "Found post"
+// @Failure 400 {object} map[string]string "Bad request - invalid user ID"
+// @Failure 404 {object} map[string]string "Post not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /posts/username/{username} [get]
+// @Router /posts/userid/{userid} [get]
 func (h *PostsHandler) GetPostByUserID(c echo.Context) error {
 	userID := c.Param("userid")
 

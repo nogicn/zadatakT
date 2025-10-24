@@ -14,7 +14,7 @@ import (
 	"backendT/internal/database/repository"
 
 	_ "github.com/joho/godotenv/autoload"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"github.com/pressly/goose/v3"
 )
@@ -57,13 +57,26 @@ var (
 	dbInstance *service
 )
 
-func New() Service {
+func New(dburlOverride ...string) Service {
+	var doesExist bool = false
 	// Reuse Connection
 	if dbInstance != nil {
 		return dbInstance
 	}
 
-	dbro, err := sql.Open("sqlite3", "file:"+dburl)
+	// Only used for testing purposes with sqlite
+	if len(dburlOverride) > 0 && dburlOverride[0] != "" {
+		dburl = dburlOverride[0]
+	} else {
+		dburl = "file:" + os.Getenv("BLUEPRINT_DB_URL")
+	}
+
+	// check if file exists
+	if _, err := os.Stat(dburl); err == nil {
+		doesExist = true
+	}
+
+	dbro, err := sql.Open("sqlite", dburl)
 	if err != nil {
 		log.Fatal(err)
 
@@ -72,7 +85,7 @@ func New() Service {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			log.Fatalf("failed to create database directory: %v", err)
 		}
-		dbro, err = sql.Open("sqlite3", "file:"+dburl)
+		dbro, err = sql.Open("sqlite", dburl)
 		if err != nil {
 			log.Fatalf("failed to open database even after trying to create it, check free disk space: %v", err)
 			return nil
@@ -82,7 +95,7 @@ func New() Service {
 	dbro.Exec("PRAGMA journal_mode=WAL;")
 	dbro.Exec("mode=ro;")
 
-	dbrw, err := sql.Open("sqlite3", "file:"+dburl)
+	dbrw, err := sql.Open("sqlite", dburl)
 	if err != nil {
 		log.Fatal(err)
 
@@ -91,7 +104,7 @@ func New() Service {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			log.Fatalf("failed to create database directory: %v", err)
 		}
-		dbrw, err = sql.Open("sqlite3", "file:"+dburl)
+		dbrw, err = sql.Open("sqlite", dburl)
 		if err != nil {
 			log.Fatalf("failed to open database even after trying to create it, check free disk space: %v", err)
 			return nil
@@ -108,7 +121,7 @@ func New() Service {
 
 	goose.SetBaseFS(embedMigrations)
 
-	if err := goose.SetDialect("sqlite3"); err != nil {
+	if err := goose.SetDialect("sqlite"); err != nil {
 		log.Fatalf("goose set dialect failed: %v", err)
 	}
 
@@ -127,7 +140,9 @@ func New() Service {
 		reporw: queriesrw,
 	}
 
-	if queriesrw.UsersGetByUsername(context.Background(), "test"); err != nil {
+	fmt.Println(doesExist)
+
+	if !doesExist {
 		FillWithData(dbInstance)
 	}
 
@@ -146,11 +161,11 @@ func FillWithData(s Service) {
 		log.Printf("Error creating test user: %v", err)
 	}
 
-	fmt.Println("Created test user")
-	fmt.Println(repo.UsersGetAll(ctx))
+	//fmt.Println("Created test user")
+	//fmt.Println(repo.UsersGetAll(ctx))
 
 	userID, _ := repo.UsersGetByUsername(ctx, "test")
-	fmt.Printf("Fetched test user: %+v\n", userID)
+	//fmt.Printf("Fetched test user: %+v\n", userID)
 
 	_, err = repo.PostsCreate(ctx, repository.PostsCreateParams{
 		Title:   "Hello World",

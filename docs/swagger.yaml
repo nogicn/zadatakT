@@ -57,6 +57,19 @@ definitions:
       response_time:
         $ref: '#/definitions/sql.NullString'
     type: object
+  backendT_internal_database_repository.Post:
+    properties:
+      content:
+        type: string
+      created_at:
+        $ref: '#/definitions/sql.NullTime'
+      id:
+        type: integer
+      title:
+        type: string
+      user_id:
+        type: integer
+    type: object
   backendT_internal_database_repository.PostsCreateParams:
     properties:
       content:
@@ -139,7 +152,8 @@ paths:
       - logs
   /logs/filtered:
     get:
-      description: Returns filtered logs based on method, response type and time range
+      description: Returns filtered logs based on method, response type and time range.
+        Requires limit, offset and timeRange parameters.
       parameters:
       - description: HTTP method to filter by
         in: query
@@ -149,17 +163,21 @@ paths:
         in: query
         name: response
         type: integer
-      - description: Time range (e.g. '-1 hour', '-24 hours', '-7 days')
+      - description: Time range (e.g. '-1 hour', '-24 hours', '-7 days'). Required
+          parameter.
         in: query
         name: timeRange
+        required: true
         type: string
-      - description: Offset for pagination
+      - description: Offset for pagination. Required parameter.
         in: query
         name: offset
+        required: true
         type: integer
-      - description: Limit for pagination
+      - description: Limit for pagination. Required parameter.
         in: query
         name: limit
+        required: true
         type: integer
       produces:
       - application/json
@@ -231,7 +249,7 @@ paths:
           description: List of posts
           schema:
             items:
-              $ref: '#/definitions/backendT_internal_database_repository.User'
+              $ref: '#/definitions/backendT_internal_database_repository.Post'
             type: array
         "500":
           description: Internal server error
@@ -245,12 +263,12 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new user in the database. Expects a JSON body with the
+      description: Creates a new post in the database. Expects a JSON body with the
         required fields.
       parameters:
-      - description: New user payload
+      - description: New post payload
         in: body
-        name: user
+        name: post
         required: true
         schema:
           $ref: '#/definitions/backendT_internal_database_repository.PostsCreateParams'
@@ -258,9 +276,9 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created user
+          description: Created post
           schema:
-            $ref: '#/definitions/backendT_internal_database_repository.User'
+            $ref: '#/definitions/backendT_internal_database_repository.Post'
         "400":
           description: Bad request - invalid payload
           schema:
@@ -273,14 +291,14 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Create a new user
+      summary: Create a new post
       tags:
       - posts
   /posts/id/{id}:
     get:
-      description: Fetches a single user by numeric ID.
+      description: Fetches a single post by numeric ID.
       parameters:
-      - description: User ID
+      - description: Post ID
         in: path
         name: id
         required: true
@@ -289,9 +307,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: Found user
+          description: Found post
           schema:
-            $ref: '#/definitions/backendT_internal_database_repository.User'
+            $ref: '#/definitions/backendT_internal_database_repository.Post'
         "400":
           description: Bad request - invalid ID
           schema:
@@ -299,7 +317,7 @@ paths:
               type: string
             type: object
         "404":
-          description: User not found
+          description: Post not found
           schema:
             additionalProperties:
               type: string
@@ -310,33 +328,33 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Get user by ID
+      summary: Get post by ID
       tags:
       - posts
-  /posts/username/{username}:
+  /posts/userid/{userid}:
     get:
-      description: Fetches a single user by their username.
+      description: Fetches a single post by its user ID.
       parameters:
-      - description: Username
+      - description: User ID
         in: path
-        name: username
+        name: userid
         required: true
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Found user
+          description: Found post
           schema:
-            $ref: '#/definitions/backendT_internal_database_repository.User'
+            $ref: '#/definitions/backendT_internal_database_repository.Post'
         "400":
-          description: Bad request - invalid username
+          description: Bad request - invalid user ID
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: User not found
+          description: Post not found
           schema:
             additionalProperties:
               type: string
@@ -347,7 +365,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Get user by username
+      summary: Get post by user ID
       tags:
       - posts
   /users:

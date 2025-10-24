@@ -14,20 +14,28 @@ run:
 	@go run cmd/api/main.go
 # Create DB container
 docker-run:
-	@if docker compose up --build 2>/dev/null; then \
-		: ; \
-	else \
-		echo "Falling back to Docker Compose V1"; \
+	@if command -v docker-compose >/dev/null 2>&1; then \
+		echo "Using Docker Compose V1"; \
 		docker-compose up --build; \
+	elif docker compose version >/dev/null 2>&1; then \
+		echo "Using Docker Compose V2"; \
+		docker compose up --build; \
+	else \
+		echo "Error: Neither Docker Compose V1 nor V2 found. Please install Docker Compose."; \
+		exit 1; \
 	fi
 
 # Shutdown DB container
 docker-down:
-	@if docker compose down 2>/dev/null; then \
-		: ; \
-	else \
-		echo "Falling back to Docker Compose V1"; \
+	@if command -v docker-compose >/dev/null 2>&1; then \
+		echo "Using Docker Compose V1"; \
 		docker-compose down; \
+	elif docker compose version >/dev/null 2>&1; then \
+		echo "Using Docker Compose V2"; \
+		docker compose down; \
+	else \
+		echo "Error: Neither Docker Compose V1 nor V2 found. Please install Docker Compose."; \
+		exit 1; \
 	fi
 
 # Test the application

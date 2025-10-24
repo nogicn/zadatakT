@@ -94,14 +94,14 @@ func (h *LogsHandler) GetLogsWithPagination(c echo.Context) error {
 
 // GetLogsAdvanced handles HTTP GET requests to retrieve filtered logs.
 // @Summary Get filtered logs
-// @Description Returns filtered logs based on method, response type and time range
+// @Description Returns filtered logs based on method, response type and time range. Requires limit, offset and timeRange parameters.
 // @Tags logs
 // @Produce json
 // @Param method query string false "HTTP method to filter by"
 // @Param response query int false "Response status code to filter by"
-// @Param timeRange query string false "Time range (e.g. '-1 hour', '-24 hours', '-7 days')"
-// @Param offset query int false "Offset for pagination"
-// @Param limit query int false "Limit for pagination"
+// @Param timeRange query string true "Time range (e.g. '-1 hour', '-24 hours', '-7 days'). Required parameter."
+// @Param offset query int true "Offset for pagination. Required parameter."
+// @Param limit query int true "Limit for pagination. Required parameter."
 // @Success 200 {array} repository.LogsGetBasicViewWithOffsetLimitAdvancedRow
 // @Failure 400 {object} map[string]string "Invalid parameters"
 // @Failure 500 {object} map[string]string "Internal server error"

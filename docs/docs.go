@@ -49,7 +49,7 @@ const docTemplate = `{
         },
         "/logs/filtered": {
             "get": {
-                "description": "Returns filtered logs based on method, response type and time range",
+                "description": "Returns filtered logs based on method, response type and time range. Requires limit, offset and timeRange parameters.",
                 "produces": [
                     "application/json"
                 ],
@@ -72,21 +72,24 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Time range (e.g. '-1 hour', '-24 hours', '-7 days')",
+                        "description": "Time range (e.g. '-1 hour', '-24 hours', '-7 days'). Required parameter.",
                         "name": "timeRange",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Offset for pagination",
+                        "description": "Offset for pagination. Required parameter.",
                         "name": "offset",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Limit for pagination",
+                        "description": "Limit for pagination. Required parameter.",
                         "name": "limit",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -191,7 +194,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/backendT_internal_database_repository.User"
+                                "$ref": "#/definitions/backendT_internal_database_repository.Post"
                             }
                         }
                     },
@@ -207,7 +210,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a new user in the database. Expects a JSON body with the required fields.",
+                "description": "Creates a new post in the database. Expects a JSON body with the required fields.",
                 "consumes": [
                     "application/json"
                 ],
@@ -217,11 +220,11 @@ const docTemplate = `{
                 "tags": [
                     "posts"
                 ],
-                "summary": "Create a new user",
+                "summary": "Create a new post",
                 "parameters": [
                     {
-                        "description": "New user payload",
-                        "name": "user",
+                        "description": "New post payload",
+                        "name": "post",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -231,9 +234,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created user",
+                        "description": "Created post",
                         "schema": {
-                            "$ref": "#/definitions/backendT_internal_database_repository.User"
+                            "$ref": "#/definitions/backendT_internal_database_repository.Post"
                         }
                     },
                     "400": {
@@ -259,18 +262,18 @@ const docTemplate = `{
         },
         "/posts/id/{id}": {
             "get": {
-                "description": "Fetches a single user by numeric ID.",
+                "description": "Fetches a single post by numeric ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "posts"
                 ],
-                "summary": "Get user by ID",
+                "summary": "Get post by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "Post ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -278,9 +281,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Found user",
+                        "description": "Found post",
                         "schema": {
-                            "$ref": "#/definitions/backendT_internal_database_repository.User"
+                            "$ref": "#/definitions/backendT_internal_database_repository.Post"
                         }
                     },
                     "400": {
@@ -293,7 +296,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "User not found",
+                        "description": "Post not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -313,34 +316,34 @@ const docTemplate = `{
                 }
             }
         },
-        "/posts/username/{username}": {
+        "/posts/userid/{userid}": {
             "get": {
-                "description": "Fetches a single user by their username.",
+                "description": "Fetches a single post by its user ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "posts"
                 ],
-                "summary": "Get user by username",
+                "summary": "Get post by user ID",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Username",
-                        "name": "username",
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userid",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Found user",
+                        "description": "Found post",
                         "schema": {
-                            "$ref": "#/definitions/backendT_internal_database_repository.User"
+                            "$ref": "#/definitions/backendT_internal_database_repository.Post"
                         }
                     },
                     "400": {
-                        "description": "Bad request - invalid username",
+                        "description": "Bad request - invalid user ID",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -349,7 +352,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "User not found",
+                        "description": "Post not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -705,6 +708,26 @@ const docTemplate = `{
                 },
                 "response_time": {
                     "$ref": "#/definitions/sql.NullString"
+                }
+            }
+        },
+        "backendT_internal_database_repository.Post": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "$ref": "#/definitions/sql.NullTime"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },

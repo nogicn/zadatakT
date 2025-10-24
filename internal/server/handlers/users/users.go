@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -124,21 +125,25 @@ func (h *UsersHandler) GetUserByID(c echo.Context) error {
 // @Router /users/username/{username} [get]
 func (h *UsersHandler) GetUserByUsername(c echo.Context) error {
 	username := c.Param("username")
-	if err := c.Bind(&username); err != nil {
+	if username == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request payload" + err.Error(),
+			"error": "Username is required",
 		})
 	}
 
 	user, err := h.repo.UsersGetByUsername(c.Request().Context(), username)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "User not found",
+			})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch user",
 		})
 	}
 
 	return c.JSON(http.StatusOK, user)
-
 }
 
 // GetUserByEmail handles HTTP GET requests to retrieve a user by email.
@@ -153,20 +158,24 @@ func (h *UsersHandler) GetUserByUsername(c echo.Context) error {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /users/email/{email} [get]
 func (h *UsersHandler) GetUserByEmail(c echo.Context) error {
-	username := c.Param("email")
-	if err := c.Bind(&username); err != nil {
+	email := c.Param("email")
+	if email == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request payload" + err.Error(),
+			"error": "Email is required",
 		})
 	}
 
-	user, err := h.repo.UsersGetByEmail(c.Request().Context(), username)
+	user, err := h.repo.UsersGetByEmail(c.Request().Context(), email)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "User not found",
+			})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch user",
 		})
 	}
 
 	return c.JSON(http.StatusOK, user)
-
 }

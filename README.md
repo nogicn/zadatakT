@@ -1,20 +1,35 @@
 # Project backendT
 
 Backend and mock implementation for the T company hackathon.
+Didn't have time to finish the frontend, but the backend is done.
+
+I tried using copilot/chat as little as possible and mostly used it to help me debug problems.
+Most of the problems that made me lose time were connected to me not being familliar with how Echo handles bindings/parsing of data and setting up swagger with Echo.
+I usually use either net/http with gorilla/mux or gofiber, challenged myself to try Echo in a hackathon without using it before and it made me lose around 3 hours to set everything up.
 
 ## Notable features
 
+The backend is written in Echo, a simple golang framework.
+
 The backend does two things.
 It uses two models to simulate a small CRUD app (/posts and /users endpoint)
-and it also logs all requests it has processed (/logs endpoint) including logs requests themselves (inception :D).
+and it also logs all requests it has processed (/logs endpoint) including requests for logs themselves (inception :D).
 
 Its possible to use multiple filters on the logs endpoint so the frontend doesnt need to do too much work. Example curl requests can be found in routes.go in case I don't have enough time to finish the frontend or you can run them in swagger.
 
-The specific details of the api can be seen on 
-```https://waps.website/swagger/index.html```
+Swagger runs on /swagger/index.html 
+```url
+https://waps.website/swagger/index.html
+```
+or if run locally
+```url
+http://localhost:8080/swagger/index.html
+```
+
+By default, there is a single account and post made so you can test the application with swagger right away.
 
 The application can also be connected to the T app with a simple wrapper as seen in routes.go.
-You only need to add the variables to the env file as per instructions on the T company dashboard and the rest will work like magic!
+You only need to add the variables to the env as per instructions on the T company dashboard and the rest will work like magic!
 
 The application uses sqlite for the local database.
 Because the go sqlite implementation doesnt pair well with multiple writers, two differerent connections are made to the db.
@@ -30,12 +45,18 @@ Sqlc automatically creates functions that can be used for scanning data from the
 This backend is deployed on ```https://api.waps.website```,
 and the frontend will be deployed on ```https://waps.website```
 
-
+The application has integration tests for endpoints and unit tests for the database repository layer.
+```bash
+make test
+```
 
 
 ## Running the project
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+You can run the application using docker or using the Makefile just rename the .env.example file to .env.
+The application defaults to port 8080 but can be changed in the .env file.
+
+Below are all possible commands with the application.
 
 ## MakeFile
 
@@ -63,12 +84,7 @@ Shutdown DB Container
 make docker-down
 ```
 
-DB Integrations Test:
-```bash
-make itest
-```
-
-Live reload the application:
+Live reload the application using air:
 ```bash
 make watch
 ```

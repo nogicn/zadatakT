@@ -33,8 +33,4 @@ main
 .DS_Store
 
 # Ignore database repository files
-internal/database/repository/*.go
-
-docs/docs.go
-docs/swagger.json
-docs/swagger.yaml
+#internal/database/repository/*.go

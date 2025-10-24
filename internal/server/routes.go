@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"database/sql"
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -15,8 +14,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-
-	"github.com/coder/websocket"
 
 	"github.com/Treblle/treblle-go/v2"
 
@@ -36,46 +33,7 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	e := echo.New()
 
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			start := time.Now()
-
-			// Process the request
-			err := next(c)
-			if err != nil {
-				c.Error(err)
-			}
-
-			// Create log entry after request is processed
-			entry := repository.LogsCreateParams{
-				RequestID:    sql.NullString{String: c.Response().Header().Get(echo.HeaderXRequestID), Valid: true},
-				RemoteIp:     sql.NullString{String: c.RealIP(), Valid: true},
-				Host:         sql.NullString{String: c.Request().Host, Valid: true},
-				Method:       sql.NullString{String: c.Request().Method, Valid: true},
-				Uri:          sql.NullString{String: c.Request().RequestURI, Valid: true},
-				UserAgent:    sql.NullString{String: c.Request().UserAgent(), Valid: true},
-				Status:       sql.NullInt64{Int64: int64(c.Response().Status), Valid: true},
-				Error:        sql.NullString{String: fmt.Sprintf("%v", err), Valid: true},
-				Latency:      sql.NullInt64{Int64: time.Since(start).Microseconds(), Valid: true},
-				LatencyHuman: sql.NullString{String: time.Since(start).String(), Valid: true},
-				BytesIn:      sql.NullInt64{Int64: c.Request().ContentLength, Valid: true},
-				BytesOut:     sql.NullInt64{Int64: int64(c.Response().Size), Valid: true},
-			}
-
-			// Log to console
-			logLine, _ := json.Marshal(entry)
-			fmt.Fprintln(os.Stdout, string(logLine))
-
-			// Save to database
-			_, dbErr := s.db.GetRepositoryRW().LogsCreate(c.Request().Context(), entry)
-			if dbErr != nil {
-				log.Printf("Error saving log entry: %v", dbErr)
-			}
-
-			return err
-		}
-
-	})
+	e.Use(s.LoggingMiddleware())
 
 	e.Use(middleware.Recover())
 
@@ -142,11 +100,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		}
 	})
 
-	e.GET("/", s.HelloWorldHandler)
-
 	e.GET("/health", s.healthHandler)
-
-	e.GET("/websocket", s.websocketHandler)
 
 	e.GET("/failure", s.simulateHorribleFailureRandomly)
 
@@ -162,7 +116,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// curl example command: curl http://localhost:8080/posts
 
 	e.POST("/posts", handlersRW.Posts.CreatePost)
-	// curl example command: curl -X POST http://localhost:8080/posts -H "Content-Type: application/json" -d '{"title":"Test Post","content":"This is a test post."}'
+	// curl example command: curl -X POST http://localhost:8080/posts -H "Content-Type: application/json" -d '{"title":"Test Post","content":"This is a test post.", "user_id":1}'
 
 	e.GET("/posts/id/:id", handlersRW.Posts.GetPostByID)
 	// curl example command: curl http://localhost:8080/posts/id/1
@@ -185,46 +139,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	return e
 }
 
-func (s *Server) HelloWorldHandler(c echo.Context) error {
-	resp := map[string]string{
-		"message": "Hello World",
-	}
-
-	return c.JSON(http.StatusOK, resp)
-}
-
 func (s *Server) healthHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, s.db.Health())
 }
 
-func (s *Server) websocketHandler(c echo.Context) error {
-	w := c.Response().Writer
-	r := c.Request()
-	socket, err := websocket.Accept(w, r, nil)
-
-	if err != nil {
-		log.Printf("could not open websocket: %v", err)
-		_, _ = w.Write([]byte("could not open websocket"))
-		w.WriteHeader(http.StatusInternalServerError)
-		return nil
-	}
-
-	defer socket.Close(websocket.StatusGoingAway, "server closing websocket")
-
-	ctx := r.Context()
-	socketCtx := socket.CloseRead(ctx)
-
-	for {
-		payload := fmt.Sprintf("server timestamp: %d", time.Now().UnixNano())
-		err := socket.Write(socketCtx, websocket.MessageText, []byte(payload))
-		if err != nil {
-			break
-		}
-		time.Sleep(time.Second * 2)
-	}
-	return nil
-}
-
+// Added it but never used it for hackathon, tho can still be used to simulate random failures
 func (s *Server) simulateHorribleFailureRandomly(c echo.Context) error {
 	if rand.Int()%9 == 0 {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -234,5 +153,47 @@ func (s *Server) simulateHorribleFailureRandomly(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"message": "All good! ",
 		})
+	}
+}
+
+func (s *Server) LoggingMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			start := time.Now()
+
+			// Process the request
+			err := next(c)
+			if err != nil {
+				c.Error(err)
+			}
+
+			// Create log entry after request is processed
+			entry := repository.LogsCreateParams{
+				RequestID:    sql.NullString{String: c.Response().Header().Get(echo.HeaderXRequestID), Valid: true},
+				RemoteIp:     sql.NullString{String: c.RealIP(), Valid: true},
+				Host:         sql.NullString{String: c.Request().Host, Valid: true},
+				Method:       sql.NullString{String: c.Request().Method, Valid: true},
+				Uri:          sql.NullString{String: c.Request().RequestURI, Valid: true},
+				UserAgent:    sql.NullString{String: c.Request().UserAgent(), Valid: true},
+				Status:       sql.NullInt64{Int64: int64(c.Response().Status), Valid: true},
+				Error:        sql.NullString{String: fmt.Sprintf("%v", err), Valid: true},
+				Latency:      sql.NullInt64{Int64: time.Since(start).Microseconds(), Valid: true},
+				LatencyHuman: sql.NullString{String: time.Since(start).String(), Valid: true},
+				BytesIn:      sql.NullInt64{Int64: c.Request().ContentLength, Valid: true},
+				BytesOut:     sql.NullInt64{Int64: int64(c.Response().Size), Valid: true},
+			}
+
+			// Log to console
+			//logLine, _ := json.Marshal(entry)
+			//fmt.Fprintln(os.Stdout, string(logLine))
+
+			// Save to database
+			_, dbErr := s.db.GetRepositoryRW().LogsCreate(c.Request().Context(), entry)
+			if dbErr != nil {
+				log.Printf("Error saving log entry: %v", dbErr)
+			}
+
+			return err
+		}
 	}
 }

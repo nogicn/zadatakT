@@ -18,12 +18,16 @@ type Server struct {
 	db database.Service
 }
 
-func NewServer() (*http.Server, database.Service) {
+/*func (s *Server) GetServer() (*http.Server, database.Service) {
+	return NewServer()
+}*/
+
+func NewServer(databaseNameOverride ...string) (*http.Server, database.Service) {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	NewServer := &Server{
 		port: port,
 
-		db: database.New(),
+		db: database.New(databaseNameOverride...),
 	}
 
 	// Declare Server config
