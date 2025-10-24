@@ -59,6 +59,11 @@ var (
 
 func New(dburlOverride ...string) Service {
 	var doesExist bool = false
+
+	if dburl == "" && len(dburlOverride) == 0 {
+		log.Fatal("BLUEPRINT_DB_URL is not set, check your .env file")
+	}
+
 	// Reuse Connection
 	if dbInstance != nil {
 		return dbInstance
@@ -72,7 +77,7 @@ func New(dburlOverride ...string) Service {
 	}
 
 	// check if file exists
-	if _, err := os.Stat(dburl); err == nil {
+	if _, err := os.Stat(dburl); err != nil {
 		doesExist = true
 	}
 
@@ -139,8 +144,6 @@ func New(dburlOverride ...string) Service {
 		reporo: queriesro,
 		reporw: queriesrw,
 	}
-
-	fmt.Println(doesExist)
 
 	if !doesExist {
 		FillWithData(dbInstance)

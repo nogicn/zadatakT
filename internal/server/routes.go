@@ -54,51 +54,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	})
 
 	// Wrap treblle's net/http middleware
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			// Read and buffer the request body so both Treblle and Echo handlers can consume it.
-			var bodyBytes []byte
-			if c.Request().Body != nil {
-				var err error
-				bodyBytes, err = io.ReadAll(c.Request().Body)
-				if err != nil {
-					return c.JSON(http.StatusInternalServerError, map[string]string{
-						"error": "failed to read request body",
-					})
-				}
-			}
-			// restore body for Echo handlers
-			c.Request().Body = io.NopCloser(bytes.NewReader(bodyBytes))
-
-			h := treblle.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// give Treblle a copy of the request body
-				if len(bodyBytes) > 0 {
-					r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-				}
-
-				// Replace Echo's underlying response writer with Treblle's wrapped writer
-				originalWriter := c.Response().Writer
-				c.Response().Writer = w
-
-				if err := next(c); err != nil {
-					// let Echo handle the error
-					c.Error(err)
-				}
-
-				// restore original writer after the handler completes
-				c.Response().Writer = originalWriter
-			}))
-
-			// Use Echo's underlying response writer and a request copy for Treblle
-			reqForTreblle := c.Request().Clone(c.Request().Context())
-			if len(bodyBytes) > 0 {
-				reqForTreblle.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-			}
-			h.ServeHTTP(c.Response().Writer, reqForTreblle)
-
-			return nil
-		}
-	})
+	e.Use(s.TLoggingMiddleware())
 
 	e.GET("/health", s.healthHandler)
 
@@ -112,9 +68,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/users/username/:username", handlersRW.Users.GetUserByUsername)
 	e.GET("/users/email/:email", handlersRW.Users.GetUserByEmail)
 
-	//e.GET("/posts", handlersRW.Posts.GetAllPosts)
-	// curl example command: curl http://localhost:8080/posts
-
 	e.POST("/posts", handlersRW.Posts.CreatePost)
 	// curl example command: curl -X POST http://localhost:8080/posts -H "Content-Type: application/json" -d '{"title":"Test Post","content":"This is a test post.", "user_id":1}'
 
@@ -124,8 +77,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/posts/userid/:userid", handlersRW.Posts.GetPostByUserID)
 	// curl example command: curl http://localhost:8080/posts/userid/1
 
-	//e.GET("/logs", handlersRW.Logs.GetAllLogs)
-
 	// Read-only handlers for greater speed where big data is read
 	handlerRO := handlers.New(s.db.GetRepositoryRO())
 	e.GET("/users", handlerRO.Users.GetAllUsers)
@@ -134,7 +85,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/logs/paginated", handlerRO.Logs.GetLogsWithPagination)
 	e.GET("/logs/filtered", handlerRO.Logs.GetLogsAdvanced)
-	// curl example command: curl "http://localhost:8080/logs/filtered?method=GET&response=200&timeRange=-1%20hour"
+	// curl example command: curl -X 'GET' 'http://localhost:8080/logs/filtered?method=GET&response=200&timeRange=-18%20hour&offset=0&limit=10' -H 'accept: application/json'
 
 	return e
 }
@@ -194,6 +145,54 @@ func (s *Server) LoggingMiddleware() echo.MiddlewareFunc {
 			}
 
 			return err
+		}
+	}
+}
+
+func (s *Server) TLoggingMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// Read and buffer the request body so both Treblle and Echo handlers can consume it.
+			var bodyBytes []byte
+			if c.Request().Body != nil {
+				var err error
+				bodyBytes, err = io.ReadAll(c.Request().Body)
+				if err != nil {
+					return c.JSON(http.StatusInternalServerError, map[string]string{
+						"error": "failed to read request body",
+					})
+				}
+			}
+			// restore body for Echo handlers
+			c.Request().Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+			h := treblle.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// give Treblle a copy of the request body
+				if len(bodyBytes) > 0 {
+					r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+				}
+
+				// Replace Echo's underlying response writer with Treblle's wrapped writer
+				originalWriter := c.Response().Writer
+				c.Response().Writer = w
+
+				if err := next(c); err != nil {
+					// let Echo handle the error
+					c.Error(err)
+				}
+
+				// restore original writer after the handler completes
+				c.Response().Writer = originalWriter
+			}))
+
+			// Use Echo's underlying response writer and a request copy for Treblle
+			reqForTreblle := c.Request().Clone(c.Request().Context())
+			if len(bodyBytes) > 0 {
+				reqForTreblle.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+			}
+			h.ServeHTTP(c.Response().Writer, reqForTreblle)
+
+			return nil
 		}
 	}
 }

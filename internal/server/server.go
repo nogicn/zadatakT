@@ -24,6 +24,9 @@ type Server struct {
 
 func NewServer(databaseNameOverride ...string) (*http.Server, database.Service) {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	if port == 0 {
+		port = 8080
+	}
 	NewServer := &Server{
 		port: port,
 
