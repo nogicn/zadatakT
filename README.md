@@ -58,17 +58,41 @@ Sqlc automatically creates functions that can be used for scanning data from the
 
 This backend is deployed on ```https://api.waps.website```
 
-The application has integration tests for endpoints and unit tests for the database repository layer.
+The application has integration tests for endpoints and unit tests for the database repository layer. And it uses Testify for assertions and mocking.
+```url
+https://github.com/stretchr/testify
+```
+
+On pull requests, the tests are automatically run using github actions.
 
 
 
 ## Running the project
 
-### You can run the application using docker or using the Makefile just remember to rename the .env.example file to .env.
+### Environment Configuration
+
+The application supports two environments: local development and production. The environment is controlled by the `APP_ENV` variable in your `.env` file.
+
+#### Local Development
+```env
+APP_ENV=local
+```
+
+#### Production Environment
+```env
+APP_ENV=production
+```
+And you can change the domain in the Caddyfile for production.
+
+### Basic Setup
+1. Copy `example.env` to `.env`
+2. Modify the environment variables as needed
+3. For production, update the domain in `Caddyfile`
+
 The application defaults to port 8080 but can be changed in the .env file.
 
 
-Below are all possible commands with the application.
+Below are all possible commands.
 
 ## MakeFile
 
@@ -94,6 +118,11 @@ make docker-run
 Shutdown docker Container
 ```bash
 make docker-down
+```
+
+Run the application in production mode
+```bash
+make docker-run --profile production
 ```
 
 Live reload the application using air:
